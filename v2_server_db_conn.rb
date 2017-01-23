@@ -60,13 +60,13 @@ class ServerDbApp < Sinatra::Base
       puts "created new entry"
       end
         s3.create_bucket({
-          bucket: "12345hgs12356", # required
+          bucket: "appillllllllllllll123", # required
           create_bucket_configuration: {
             location_constraint: "eu-central-1"
           }
           })
-          json_data= {"Name"=> application_name, "GUID"=> "12345hgs12356"}.to_json
-           dataset.insert(:guid => '12345hgs12356', :appName => application_name)
+          json_data= {"Name"=> application_name, "GUID"=> "appillllllllllllll123"}.to_json
+           dataset.insert(:guid => 'appillllllllllllll123', :appName => application_name)
            status 201
            return json_data
       end                                     #apps end
@@ -85,10 +85,10 @@ class ServerDbApp < Sinatra::Base
           bucket: bucket, # required
           key: key, # required
           })
-          known_hash<<key
+          known_hash << key
          #if response.conte
         rescue Aws::S3::Errors::NotFound => e
-          unknown_hash<<key
+          unknown_hash << key
           end
           puts "unknown_hash"
           puts unknown_hash
