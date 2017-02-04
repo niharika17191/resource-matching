@@ -60,13 +60,13 @@ class ServerDbApp < Sinatra::Base
       puts "created new entry"
       end
         s3.create_bucket({
-          bucket: "appillllllllllllll123", # required
+          bucket: "12345hgs12356", # required
           create_bucket_configuration: {
             location_constraint: "eu-central-1"
           }
           })
-          json_data= {"Name"=> application_name, "GUID"=> "appillllllllllllll123"}.to_json
-           dataset.insert(:guid => 'appillllllllllllll123', :appName => application_name)
+          json_data= {"Name"=> application_name, "GUID"=> "12345hgs12356"}.to_json
+           dataset.insert(:guid => '12345hgs12356', :appName => application_name)
            status 201
            return json_data
       end                                     #apps end
@@ -106,57 +106,60 @@ class ServerDbApp < Sinatra::Base
 
 
         filename = params['myfile'][:filename]
-        puts filename.class
+        #puts filename.class
         file = params['myfile'][:tempfile]
-        puts file.path
+      #  puts file
+        #puts "file"
         filename = params['myfile'][:filename]
-        puts filename
+        #puts filename
         File.open("./server_applications/#{file}", 'wb') do |f|
+          f.path
           f.write(file.read)
           f.close
         end
-        Zip::ZipFile.open("./server_applications/#{file}") { |zipfile|
-          guid_json = JSON.parse(zipfile.file.read("guid.json"))
+        begin
+            resp = s3_client.get_object(
+                              response_target: '/home/niharika/Desktop/ClientServer/server_applications/zip.zip',
+                              bucket: '12345hgs12356',
+                              key: 'zip.zip')
+        rescue Aws::S3::Errors::NoSuchKey => $error
+            puts $error
+        end
+        #file = Pathname.new("/home/niharika/Desktop/server_applications"+file_path)
+        if $error
+        s3_client.put_object(bucket: "12345hgs12356", key: filename, body: File.open("/home/niharika/Desktop/ClientServer/server_applications/#{file}"))
+      else
+        puts "ssssssssssssssssssssssssssssssssssssssssss"
+        Zip::ZipFile.open("./server_applications/#{file}") { |clientfile|
+          guid_json = JSON.parse(clientfile.file.read("guid.json"))
           guid = guid_json['GUID']
-          #puts guid
-          path = "/home/niharika/Desktop/ClientServer/server_applications" + "/" + guid
-          #@application_path = Pathname.new(path)
-          #puts path
-
-          zipfile.each do |f|
-            #puts f
-
-            f1= f.to_s
-            p1 = Pathname.new(f1)
-
-            directory, base = p1.split
-            # puts directory
-            #puts base.class
-            directory_s=directory.to_s
-            base_s=base.to_s
-            if directory_s== "."        #if it is file directly in root folder
-              puts "directory ."
-              file_content= zipfile.file.read(base_s)
-              puts file_content
+             Zip::ZipFile.open("./server_applications/zip.zip") { |serverfile|
+              clientfile.each do |cf|
+                begin
+                serverfile.add(cf,serverfile)
+                file_content= cf.get_input_stream.read
+                hash_content= Digest::SHA1.hexdigest file_content
+                s3_client.put_object(bucket: guid, key: hash_content, body: file_content)
+             rescue Zip::EntryExistsError => e
+               puts e
+              serverfile.remove(cf)
+              file_content= cf.get_input_stream.read
               hash_content= Digest::SHA1.hexdigest file_content
-              puts hash_content
-              puts guid
               s3_client.put_object(bucket: guid, key: hash_content, body: file_content)
-              #zipfile.rename(base_s, hash_content)
-            else                        #if its a directory
-              pn=p1.to_s
-              file_content = zipfile.file.read(pn)
-              hash_content= Digest::SHA1.hexdigest file_content
-              new_path = File.join(directory_s,hash_content)
-              puts guid
-              s3_client.put_object(bucket: guid, key: new_path, body: file_content)
-              #zipfile.rename(p1, new_path)
-              #end
-            end
-          end
+              cf.get_input_stream do |input_entry_stream|
+                serverfile.get_output_stream(cf.name) do |output_entry_stream|
+                  output_entry_stream.write(input_entry_stream.read)
+                    end
+                  end
+             end
+              end
+            }
         }
-      #  %x( unzip "/home/niharika/Desktop/ClientServer/server_applications/#{file}" -d #{@application_path})
+        end
+
+        s3_client.put_object(bucket: guid, key: filename, body: File.open("/home/niharika/Desktop/ClientServer/server_applications/zip.zip"))
       end
 
 
-    end                          #class end
+
+    end                          #class end                   #class end
