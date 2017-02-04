@@ -129,7 +129,7 @@ if response.code == 200
             dir = dir.to_s
             path = Pathname.new("/home/niharika/Desktop/ClientServer/applications/zip" + "/" + dir)
             puts path
-            Dir.mkdir(path) unless Dir.exist?(path)
+            FileUtils.mkdir_p(path) unless File.exist?(path)
             FileUtils.cp_r project_root,path
           else
             puts "next file"
@@ -178,7 +178,7 @@ if response.code == 200
            dir = dir.to_s
            path = Pathname.new("/home/niharika/Desktop/ClientServer/applications/zip" + "/" + dir)
            puts path
-           Dir.mkdir(path) unless Dir.exist?(path)
+           FileUtils.mkdir_p(path) unless File.exist?(path)
            FileUtils.cp_r project_root,path
          else
            puts "next file"
