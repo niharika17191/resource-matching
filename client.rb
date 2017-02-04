@@ -12,7 +12,7 @@ def compress(path, file)
   Zip::File.open(file, Zip::File::CREATE) do |zipfile|
     Dir.chdir path
     Dir.glob("**/*").reject {|fn| File.directory?(fn) }.each do |file|
-      next if file == '/home/niharika/Desktop/ClientServer/applications/appi/guid.json'
+      next if file == '/home/niharika/Desktop/ClientServer/applications/12345hgs12356/guid.json'
 #      puts "Adding #{file}"
       path=path.to_s
       zipfile.add(file.sub(path + '/', ''), file)
@@ -25,10 +25,10 @@ def find_files()				#iteratively finds files in a directory
 
   hash=Array.new
   file_array =Array.new
-  file_array =  Dir[ File.join('./applications/appi/', '**', '*') ].reject { |p| File.directory? p }
+  file_array =  Dir[ File.join('./applications/12345hgs12356/', '**', '*') ].reject { |p| File.directory? p }
   file_array.each do |file|
     absolute_path = Pathname.new(File.expand_path(file))
-    project_root  = Pathname.new("/home/niharika/Desktop/ClientServer/applications/appi")
+    project_root  = Pathname.new("/home/niharika/Desktop/ClientServer/applications/12345hgs12356")
     relative_path = absolute_path.relative_path_from(project_root)
     relative_file_path= relative_path.to_s
     directory,base = relative_path.split
@@ -50,7 +50,7 @@ def find_files()				#iteratively finds files in a directory
     file_data= JSON.parse({"FileName" => relative_file_path, "Hash"=>hash_content}.to_json)
     hash << file_data
   end
-  jdata = {"ApplicationName"=> "appi", "ApplicationFiles" => hash}.to_json
+  jdata = {"ApplicationName"=> "12345hgs12356", "ApplicationFiles" => hash}.to_json
   #puts jdata
   return jdata
 end
@@ -70,7 +70,7 @@ blob_json= JSON.parse({"Blob_array" => blob_array}.to_json)
 
 jdata = {"Name" => json["ApplicationName"]}.to_json
 begin
-  File.new("./applications/appi/guid.json", File::RDWR|File::CREAT|File::EXCL)
+  File.new("./applications/12345hgs12356/guid.json", File::RDWR|File::CREAT|File::EXCL)
 rescue
   puts "file exists"
 end
@@ -85,7 +85,7 @@ json_response=JSON.parse(response)
 # puts response.code
 #puts json_response
 if response.code == 200
-  guidjson = JSON.parse(File.read("./applications/appi/guid.json"))
+  guidjson = JSON.parse(File.read("./applications/12345hgs12356/guid.json"))
   # puts guidjson
   # puts guidjson['GUID']
   # puts json_response['GUID']
@@ -105,20 +105,20 @@ if response.code == 200
         json["ApplicationFiles"].each_index do |o|
           if hash['Hash'] == json["ApplicationFiles"][o]["Hash"]
             filename= json["ApplicationFiles"][o]["FileName"]
-            path = "/home/niharika/Desktop/ClientServer/applications/appi" +"/"+ filename
-            guid_path=  "/home/niharika/Desktop/ClientServer/applications/appi/guid.json"
+            path = "/home/niharika/Desktop/ClientServer/applications/12345hgs12356" +"/"+ filename
+            guid_path=  "/home/niharika/Desktop/ClientServer/applications/12345hgs12356/guid.json"
             guid_path=Pathname.new(guid_path)
             project_root  = Pathname.new(path)
             puts project_root
             FileUtils.cp_r guid_path,"/home/niharika/Desktop/ClientServer/applications/zip"
             absolute_path = Pathname.new(File.expand_path(project_root))
-            application_root  = Pathname.new("/home/niharika/Desktop/ClientServer/applications/appi")
+            application_root  = Pathname.new("/home/niharika/Desktop/ClientServer/applications/12345hgs12356")
             relative_path = absolute_path.relative_path_from(application_root)
             dir, file = relative_path.split
             dir = dir.to_s
             path = Pathname.new("/home/niharika/Desktop/ClientServer/applications/zip" + "/" + dir)
             puts path
-            Dir.mkdir(path) unless Dir.exist?(path)
+            FileUtils.mkdir_p(path) unless File.exist?(path)
             FileUtils.cp_r project_root,path
           end
         end
@@ -133,7 +133,7 @@ if response.code == 200
   elsif response.code == 201
   #  puts "response is 201"
     #puts response
-    File.open('./applications/appi/guid.json',"w") do |f|
+    File.open('./applications/12345hgs12356/guid.json',"w") do |f|
       f.puts JSON.pretty_generate(json_response)
       f.close
   end
