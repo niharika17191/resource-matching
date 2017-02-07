@@ -64,29 +64,34 @@ class ServerDbApp < Sinatra::Base
         status 201
         return json_data
       end                                     #apps end
-      def first_insert(jdata,hash)
-        jdata[hash].each do |sec_hash|
-          if jdata.keys.include?sec_hash
-            first_insert(jdata, sec_hash)
+      def first_insert(hash)
+        $guidjson[hash].each do |sec_hash|
+          if $guidjson.keys.include?sec_hash
+            first_insert(sec_hash)
           else
             $file_stack << sec_hash
           end
         end
       end
 
-      def change_insert(guidjson,guidkey,serverjson)
-      guidjson[guidkey].each do |sec_hash|
-            if serverjson.keys.include?sec_hash
+      def change_insert(guidkey)
+      $guidjson[guidkey].each do |sec_hash|
+            if $serverjson.keys.include?sec_hash
             puts "present" +sec_hash
-          else
-            if guidjson.keys.include?sec_hash
+          elsif $serverjson.keys.empty?
+            return $file_stack
+            else
+            if $guidjson.keys.include?sec_hash
               puts "does not exist" +sec_hash
-              change_insert(guidjson,guidkey,serverjson)
+              change_insert(sec_hash)
+              return $file_stack
             else
              $file_stack << sec_hash
-             puts $file_stack
+             puts sec_hash
              puts "file does not exist" +sec_hash
+             return $file_stack
            end
+           next
            end
 
         end
@@ -97,48 +102,67 @@ class ServerDbApp < Sinatra::Base
       post '/match' do
 
         return_data=Hash.new
-        guidjson = params[:data]
+        file = params['myfile'][:tempfile]
+        File.open("./server_applications/#{file}", 'wb') do |f|
+          #f.path
+          f.write(file.read)
+          f.close
+        end
+        $guidjson = JSON.parse(File.read("./server_applications/#{file}"))
+       #$guidjson = params[:data]
+        puts $guidjson
+        guid_download_time = Time.now
         begin
           resp = s3_client.get_object(
           response_target: '/home/niharika/Desktop/ClientServer/server_applications/guidserver.json',
           bucket: '12345hgs12356',
           key: 'guid.json')
+          $guid_download_time = Time.now - guid_download_time
+          puts "guid_download_time"
+          puts $guid_download_time
         rescue Aws::S3::Errors::NoSuchKey => e
-          guidjson[guidjson["start"]].each do |hash|
-            if guidjson.keys.include?hash
-              first_insert(guidjson, hash)
+          begin
+          $guidjson[$guidjson["start"]].each do |hash|
+            if $guidjson.keys.include?hash
+              first_insert(hash)
             else
               $file_stack << hash
             end
           end
-          return_data["GUID"]=guidjson['GUID']
+          rescue
+            puts "error"
+          end
+          return_data["GUID"]=$guidjson['GUID']
           return_data["unknown_hash"]=$file_stack
           return_data=return_data.to_json
           status 201
           return return_data
         end
-        serverjson = JSON.parse(File.read("./server_applications/guidserver.json"))
-        puts serverjson.keys
-        puts serverjson.keys.class
-        if serverjson["start"]==guidjson["start"]
+        match_time = Time.now
+        $serverjson = JSON.parse(File.read("./server_applications/guidserver.json"))
+        puts $serverjson.keys
+        puts $serverjson.keys.class
+        if $serverjson["start"]==$guidjson["start"]
           #puts "no change"
         else
-        guidjson[guidjson["start"]].each do |guidkey|
-              if   serverjson[serverjson["start"]].include?guidkey
+        $guidjson[$guidjson["start"]].each do |guidkey|
+              if   $serverjson[$serverjson["start"]].include?guidkey
                 puts "present" +guidkey
               else
-                if guidjson.keys.include?guidkey
+                if $guidjson.keys.include?guidkey
                   puts "does not exist" +guidkey
-                  change_insert(guidjson,guidkey,serverjson)
+                  change_insert(guidkey)
               else
                 puts "file does not exist" +guidkey
                  $file_stack << guidkey
-                 puts $file_stack
+                 puts guidkey
                end
 
           end
         end
-        return_data["GUID"]=guidjson['GUID']
+        $match_time_end = Time.now - match_time
+
+        return_data["GUID"]=$guidjson['GUID']
         return_data["unknown_hash"]=$file_stack
         return_data= return_data.to_json
         return return_data
@@ -148,6 +172,7 @@ class ServerDbApp < Sinatra::Base
 
       post '/bits' do
 
+        bits_time = Time.now
         filename = params['myfile'][:filename]
         #puts filename.class
         file = params['myfile'][:tempfile]
@@ -155,11 +180,14 @@ class ServerDbApp < Sinatra::Base
         #puts "file"
         filename = params['myfile'][:filename]
         #puts filename
+        client_download_time = Time.now
         File.open("./server_applications/#{file}", 'wb') do |f|
           #f.path
           f.write(file.read)
           f.close
         end
+        client_download_time = Time.now - client_download_time
+
         begin
           resp = s3_client.get_object(
           response_target: '/home/niharika/Desktop/ClientServer/server_applications/zip.zip',
@@ -177,8 +205,11 @@ class ServerDbApp < Sinatra::Base
             s3_client.put_object(bucket: $guid, key: "guid.json", body: clientfile.file.read("guid.json"))
             puts $guid
           }
+          s3_put = Time.now
           s3_client.put_object(bucket: "12345hgs12356", key: filename, body: File.open("/home/niharika/Desktop/ClientServer/server_applications/#{file}"))
+          s3_comp = Time.now - s3_put
         else
+          assemble_package = Time.now
           puts "ssssssssssssssssssssssssssssssssssssssssss"
           Zip::ZipFile.open("./server_applications/#{file}") { |clientfile|
             puts clientfile
@@ -191,8 +222,11 @@ class ServerDbApp < Sinatra::Base
                 begin
                   serverfile.add(cf,serverfile)
                 rescue Zip::EntryExistsError => e
-                  puts e
+                  #puts e
                   serverfile.remove(cf)
+                  puts  "removed file "
+                  puts cf
+                  puts  "removed file "
                   cf.get_input_stream do |input_entry_stream|
                     serverfile.get_output_stream(cf.name) do |output_entry_stream|
                       output_entry_stream.write(input_entry_stream.read)
@@ -202,8 +236,23 @@ class ServerDbApp < Sinatra::Base
               end
             }
           }
+          s3_put = Time.now
           s3_client.put_object(bucket: $guid, key: filename, body: File.open("/home/niharika/Desktop/ClientServer/server_applications/zip.zip"))
+          s3_comp = Time.now - s3_put
         end
-
+        assemble_package_time = Time.now - assemble_package
+        puts "assemble_package"
+        puts assemble_package_time
+        puts "s3_comp"
+        puts s3_comp
+        puts "client_download_time"
+        puts client_download_time
+        puts "match_time"
+        puts $match_time_end
+        bits_time_end = Time.now - bits_time
+        puts bits_time_end
+        puts "guid_download_time"
+        puts $guid_download_time
       end
     end                          #class end
+
