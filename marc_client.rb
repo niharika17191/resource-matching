@@ -30,7 +30,7 @@ def compress(path, file)
   end
 end
 
-
+first_push = Time.now
 Find.find('./applications/12345hgs12356/') { |path|
   path = Pathname.new(Pathname.pwd + path)
   #puts path
@@ -99,14 +99,19 @@ def create_tree(dir)
     #puts $directory_stack.count
     directory=$directory_stack.pop
      create_tree(directory)
-
+     return $request_json
+  else
+     return $request_json
   end
 
 end
 
 d=$directory_stack.pop
 create_tree(d)
-
+puts GC.stat
+tree_calc = Time.now - first_push
+puts "tree_calc"
+puts tree_calc
 #puts $request_json
 $request_json["ApplicationName"] = "12345hgs12356"
 
@@ -135,44 +140,52 @@ if response.code == 200
           f.puts JSON.pretty_generate($request_json)
           f.close
       end
-      puts $request_json
-     match_response=RestClient.post 'http://localhost:9292/match', {:data => $request_json}, {:content_type => :json, :accept => :json}
-     puts match_response
+      #puts $request_json
+      match_response=RestClient.post 'http://localhost:9292/match', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/12345hgs12356/guid.json", 'rb')
+     #match_response=RestClient.post 'http://localhost:9292/match', {:data => $request_json}, {:content_type => :json, :accept => :json}
+     #puts match_response
      res = JSON.parse(match_response)
     guid=res['GUID']
      Dir.mkdir("/home/niharika/Desktop/ClientServer/applications/zip")
-     puts $file_hash_json
+     #puts $file_hash_json
     # puts $file_hash_json.values
      res['unknown_hash'].each do |unknown_hash|
        if $file_hash_json.values.include? unknown_hash
-         puts "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
-         puts unknown_hash
-         puts "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+        #  puts "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
+        #  puts unknown_hash
+        #  puts "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
          unknown_file =  $file_hash_json.key(unknown_hash)
          guid_path=  "/home/niharika/Desktop/ClientServer/applications/12345hgs12356/guid.json"
          guid_path=Pathname.new(guid_path)
          project_root  = Pathname.new(unknown_file)
-         puts project_root
-         puts project_root.class
+        #  puts project_root
+        #  puts project_root.class
          FileUtils.cp_r guid_path,"/home/niharika/Desktop/ClientServer/applications/zip"
          absolute_path = Pathname.new(File.expand_path(project_root))
-         puts absolute_path
+         #puts absolute_path
          application_root  = Pathname.new("/home/niharika/Desktop/ClientServer/applications/12345hgs12356")
          relative_path = absolute_path.relative_path_from(application_root)
          dir, file = relative_path.split
-         puts dir
+         #puts dir
          dir = dir.to_s
          path = Pathname.new("/home/niharika/Desktop/ClientServer/applications/zip" + "/" + dir)
-         puts path
+         #puts path
          FileUtils.mkdir_p(path) unless File.exists?(path)
          FileUtils.cp_r project_root,path
         else
          puts "next file"
        end
      end
+     compress_time = Time.now
     compress("/home/niharika/Desktop/ClientServer/applications/zip","/home/niharika/Desktop/ClientServer/applications/zip.zip")
+    compress_time_end = Time.now - compress_time
+    bits_time = Time.now
     bits=RestClient.post 'http://localhost:9292/bits', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/zip.zip", 'rb')
    #puts bits
+   bits_time_end = Time.now - bits_time
+   puts bits_time_end
+   second_push_end = Time.now - first_push
+   puts second_push_end
     FileUtils.rm("/home/niharika/Desktop/ClientServer/applications/zip.zip")
 #
 #
@@ -188,47 +201,22 @@ end
           f.puts JSON.pretty_generate($request_json)
           f.close
       end
-    res =RestClient.post 'http://localhost:9292/match', {:data => $request_json}, {:content_type => :json, :accept => :json}
-    puts "response" +res
-    puts res
+      res = RestClient.post 'http://localhost:9292/match', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/12345hgs12356/guid.json", 'rb')
+    #res = RestClient.post 'http://localhost:9292/match', {:data => $request_json}, {:content_type => :json, :accept => :json}
     res=JSON.parse(res)
     guid=res['GUID']
-    Dir.mkdir("/home/niharika/Desktop/ClientServer/applications/zip")
-    res['unknown_hash'].each do |unknown_hash|
-      puts "unknown_hash"
-      puts unknown_hash
-      puts "unknown_hash"
-      puts "ffffffffffffffffffffffffffffffffffffffffff"
-      puts $file_hash_json.values
-      if $file_hash_json.values.include? unknown_hash
-        puts "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
-        puts unknown_hash
-        puts "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
-        unknown_file =  $file_hash_json.key(unknown_hash)
-        guid_path=  "/home/niharika/Desktop/ClientServer/applications/12345hgs12356/guid.json"
-        guid_path=Pathname.new(guid_path)
-        project_root  = Pathname.new(unknown_file)
-        puts project_root
-        puts project_root.class
-        FileUtils.cp_r guid_path,"/home/niharika/Desktop/ClientServer/applications/zip"
-        absolute_path = Pathname.new(File.expand_path(project_root))
-        puts absolute_path
-        application_root  = Pathname.new("/home/niharika/Desktop/ClientServer/applications/12345hgs12356")
-        relative_path = absolute_path.relative_path_from(application_root)
-        dir, file = relative_path.split
-        puts dir
-        dir = dir.to_s
-        path = Pathname.new("/home/niharika/Desktop/ClientServer/applications/zip" + "/" + dir)
-        puts path
-        FileUtils.mkdir_p(path) unless File.exists?(path)
-        FileUtils.cp_r project_root,path
-       else
-        puts "next file"
-      end
-    end
-   compress("/home/niharika/Desktop/ClientServer/applications/zip","/home/niharika/Desktop/ClientServer/applications/zip.zip")
+    compress_time = Time.now
+   compress("/home/niharika/Desktop/ClientServer/applications/12345hgs12356","/home/niharika/Desktop/ClientServer/applications/zip.zip")
+   compress_time_end = Time.now - compress_time
+   puts compress_time_end
    app_file = File.open("/home/niharika/Desktop/ClientServer/applications/zip.zip")
-   bits=RestClient.post 'http://localhost:9292/bits', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/zip.zip", 'rb')
-   #puts bits
+   bits_time= Time.now
+   bits=RestClient.post 'http://localhost:9292/bits', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/zip.zip", 'rb'), :timeout=> 3600
+   bits_time_end = Time.now - bits_time
+   puts bits_time_end
+      #puts bits
+   first_push_end = Time.now - first_push
+   puts first_push_end
    FileUtils.rm("/home/niharika/Desktop/ClientServer/applications/zip.zip")
    end
+
