@@ -1,3 +1,5 @@
+
+
 require 'sinatra/base'
 require 'fileutils'
 require 'rubygems'
@@ -10,8 +12,9 @@ require 'zip'
 require 'zip/zipfilesystem'
 require 'digest'
 require 'sequel'
+require 'find'
 
-DB = Sequel.sqlite('sycths_applications.db')
+DB = Sequel.sqlite('sycthss_applications.db')
 begin
   DB.run "CREATE TABLE sycths_application (guid VARCHAR(255) NOT NULL, appName VARCHAR(255) NOT NULL)"
 rescue
@@ -23,6 +26,7 @@ begin
 rescue
   puts "hash exists"
 end
+
 class ServerDbApp < Sinatra::Base
 
 
@@ -77,6 +81,7 @@ class ServerDbApp < Sinatra::Base
 
       post '/match' do
 
+        match_time = Time.now
         jdata = JSON.parse(params[:data])
         puts jdata
         unknown_hash = Array.new
@@ -101,6 +106,7 @@ class ServerDbApp < Sinatra::Base
         puts "sssssssssssssss"
         puts unknown_hash
         return_data= {"GUID" => jdata['GUID'], "Unknown_Hash"=>unknown_hash}.to_json
+        $match_time_end = Time.now - match_time
         puts return_data
         return return_data
       end
@@ -136,6 +142,7 @@ class ServerDbApp < Sinatra::Base
           s3_client.put_object(bucket: "12345hgs12356", key: filename, body: File.open("/home/niharika/Desktop/ClientServer/server_applications/#{file}"))
         else
           puts "ssssssssssssssssssssssssssssssssssssssssss"
+          assemble_start = Time.now
           Zip::ZipFile.open("./server_applications/#{file}") { |clientfile|
             guid_json = JSON.parse(clientfile.file.read("guid.json"))
             $guid = guid_json['GUID']
@@ -156,9 +163,22 @@ class ServerDbApp < Sinatra::Base
               end
             }
           }
+          s3_start = Time.now
           s3_client.put_object(bucket: $guid, key: filename, body: File.open("/home/niharika/Desktop/ClientServer/server_applications/zip.zip"))
         end
-        
+
+        # assemble = Time.now - assemble_start
+
+              s3_end = Time.now - s3_start
+              puts "s3_end"
+              puts s3_end
+              puts "s3_end"
+              puts "assemble"
+              puts assemble
+              puts "assemble"
+              puts "match_time_end"
+              puts $match_time_end
+
       end
 
 
