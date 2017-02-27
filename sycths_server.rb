@@ -1,5 +1,4 @@
 
-
 require 'sinatra/base'
 require 'fileutils'
 require 'rubygems'
@@ -78,12 +77,16 @@ class ServerDbApp < Sinatra::Base
         return json_data
       end                                     #apps end
 
+      #DB[:movies].import([:id, :director, :title, :year], [[1, "Orson Welles", "Citizen Kane", 1941],[2, "Robert Wiene", "Cabinet of Dr. Caligari, The", 1920]])
+
 
       post '/match' do
 
         match_time = Time.now
         jdata = JSON.parse(params[:data])
-        puts jdata
+        #puts jdata
+        unknown_hash_data = Array.new
+        unknown_hash_values = Array.new
         unknown_hash = Array.new
         known_hash = Array.new
         bucket = jdata['GUID']
@@ -91,8 +94,20 @@ class ServerDbApp < Sinatra::Base
           puts "hello"
           jdata['Blob_array'].each do |hash|
             unknown_hash << hash['Hash']
-            DB[:sycths_application_data].insert(jdata['GUID'],hash['Hash'],hash['FileSize'],hash['access_time'],hash['hit_count'] )
+            unknown_hash_values = Array.new
+            unknown_hash_values.push(jdata['GUID'])
+            unknown_hash_values.push(hash['Hash'])
+            unknown_hash_values.push(hash['FileSize'])
+            unknown_hash_values.push(hash['access_time'])
+            unknown_hash_values.push(hash['hit_count'])
+            unknown_hash_data.push(unknown_hash_values)
+          #  DB[:sycths_application_data].insert(jdata['GUID'],hash['Hash'],hash['FileSize'],hash['access_time'],hash['hit_count'] )
           end
+          puts "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+          puts unknown_hash_values[0][0]
+          puts "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL"
+          puts unknown_hash_values[1][0]
+          DB[:sycths_application_data].import([:guid, :hash, :file_size, :access_time, :hit_count],unknown_hash_data)
         else
           jdata['Blob_array'].each do |hash|
             guid_match = application_data.where(:guid => jdata['GUID'])
@@ -103,8 +118,8 @@ class ServerDbApp < Sinatra::Base
             end
           end
         end
-        puts "sssssssssssssss"
-        puts unknown_hash
+        # puts "sssssssssssssss"
+        # puts unknown_hash
         return_data= {"GUID" => jdata['GUID'], "Unknown_Hash"=>unknown_hash}.to_json
         $match_time_end = Time.now - match_time
         puts return_data
