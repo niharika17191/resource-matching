@@ -7,11 +7,6 @@ require 'rest-client'
 require 'zip'
 
 
-
-#puts Dir["./**/applications/12345hgs12356/*.*"]      #prints all the files or directory which are in second level after applications folder
-# puts Dir.glob("./applications/12345hgs12356/*")                 #prints name of entries that are inside current directory
-# puts Dir['**/*']                      #prints path of everything inside current folder
-
 $directory_stack=[]
 $tree_array = Array.new
 
@@ -22,7 +17,7 @@ def compress(path, file)
   Zip::File.open(file, Zip::File::CREATE) do |zipfile|
     Dir.chdir path
     Dir.glob("**/*").reject {|fn| File.directory?(fn) }.each do |file|
-      next if file == '/home/niharika/Desktop/ClientServer/applications/12345hgs12356/guid.json'
+      next if file == '/home/niharika/Desktop/ClientServer/applications/45sasa653276gdsffdd/guid.json'
       puts "Adding #{file}"
       path=path.to_s
       zipfile.add(file.sub(path + '/', ''), file)
@@ -31,7 +26,7 @@ def compress(path, file)
 end
 
 first_push = Time.now
-Find.find('./applications/12345hgs12356/') { |path|
+Find.find('./applications/45sasa653276gdsffdd/') { |path|
   path = Pathname.new(Pathname.pwd + path)
   #puts path
   if File.directory?path
@@ -113,11 +108,11 @@ tree_calc = Time.now - first_push
 puts "tree_calc"
 puts tree_calc
 #puts $request_json
-$request_json["ApplicationName"] = "12345hgs12356"
+$request_json["ApplicationName"] = "45sasa653276gdsffdd"
 
-jdata = {"Name" => "12345hgs12356"}.to_json
+jdata = {"Name" => "45sasa653276gdsffdd"}.to_json
 begin
-  File.new("./applications/12345hgs12356/guid.json", File::RDWR|File::CREAT|File::EXCL)
+  File.new("./applications/45sasa653276gdsffdd/guid.json", File::RDWR|File::CREAT|File::EXCL)
 rescue
   puts "file exists"
 end
@@ -127,23 +122,23 @@ end
 
 
 
-response = RestClient.post 'http://localhost:9292/apps', {:data => jdata}, {:content_type => :json, :accept => :json}
+response = RestClient.post 'http://localhost:9000/apps', {:data => jdata}, {:content_type => :json, :accept => :json}
 json_response=JSON.parse(response)
 if response.code == 200
-  guidjson = JSON.parse(File.read("./applications/12345hgs12356/guid.json"))
+  guidjson = JSON.parse(File.read("./applications/45sasa653276gdsffdd/guid.json"))
 
   if guidjson['GUID']==json_response['GUID']
 
     $request_json["GUID"]= guidjson['GUID']
     blob_json = $request_json.to_json
-    File.open('./applications/12345hgs12356/guid.json',"w") do |f|
+    File.open('./applications/45sasa653276gdsffdd/guid.json',"w") do |f|
           f.puts JSON.pretty_generate($request_json)
           f.close
       end
       #puts $request_json
-      match_response=RestClient.post 'http://localhost:9292/match', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/12345hgs12356/guid.json", 'rb')
-     #match_response=RestClient.post 'http://localhost:9292/match', {:data => $request_json}, {:content_type => :json, :accept => :json}
-     #puts match_response
+      match_response=RestClient.post 'http://localhost:9000/match', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/45sasa653276gdsffdd/guid.json", 'rb')
+     #match_response=RestClient.post 'http://localhost:9000/match', {:data => $request_json}, {:content_type => :json, :accept => :json}
+     puts match_response
      res = JSON.parse(match_response)
     guid=res['GUID']
      Dir.mkdir("/home/niharika/Desktop/ClientServer/applications/zip")
@@ -155,7 +150,7 @@ if response.code == 200
         #  puts unknown_hash
         #  puts "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS"
          unknown_file =  $file_hash_json.key(unknown_hash)
-         guid_path=  "/home/niharika/Desktop/ClientServer/applications/12345hgs12356/guid.json"
+         guid_path=  "/home/niharika/Desktop/ClientServer/applications/45sasa653276gdsffdd/guid.json"
          guid_path=Pathname.new(guid_path)
          project_root  = Pathname.new(unknown_file)
         #  puts project_root
@@ -163,7 +158,7 @@ if response.code == 200
          FileUtils.cp_r guid_path,"/home/niharika/Desktop/ClientServer/applications/zip"
          absolute_path = Pathname.new(File.expand_path(project_root))
          #puts absolute_path
-         application_root  = Pathname.new("/home/niharika/Desktop/ClientServer/applications/12345hgs12356")
+         application_root  = Pathname.new("/home/niharika/Desktop/ClientServer/applications/45sasa653276gdsffdd")
          relative_path = absolute_path.relative_path_from(application_root)
          dir, file = relative_path.split
          #puts dir
@@ -180,7 +175,7 @@ if response.code == 200
     compress("/home/niharika/Desktop/ClientServer/applications/zip","/home/niharika/Desktop/ClientServer/applications/zip.zip")
     compress_time_end = Time.now - compress_time
     bits_time = Time.now
-    bits=RestClient.post 'http://localhost:9292/bits', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/zip.zip", 'rb')
+    bits=RestClient.post 'http://localhost:9000/bits', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/zip.zip", 'rb')
    #puts bits
    bits_time_end = Time.now - bits_time
    puts bits_time_end
@@ -197,21 +192,21 @@ end
     response=JSON.parse(response)
     $request_json["GUID"]= response['GUID']
     blob_json = $request_json.to_json
-    File.open('./applications/12345hgs12356/guid.json',"w") do |f|
+    File.open('./applications/45sasa653276gdsffdd/guid.json',"w") do |f|
           f.puts JSON.pretty_generate($request_json)
           f.close
       end
-      res = RestClient.post 'http://localhost:9292/match', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/12345hgs12356/guid.json", 'rb')
-    #res = RestClient.post 'http://localhost:9292/match', {:data => $request_json}, {:content_type => :json, :accept => :json}
+      res = RestClient.post 'http://localhost:9000/match', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/45sasa653276gdsffdd/guid.json", 'rb')
+    #res = RestClient.post 'http://localhost:9000/match', {:data => $request_json}, {:content_type => :json, :accept => :json}
     res=JSON.parse(res)
     guid=res['GUID']
     compress_time = Time.now
-   compress("/home/niharika/Desktop/ClientServer/applications/12345hgs12356","/home/niharika/Desktop/ClientServer/applications/zip.zip")
+   compress("/home/niharika/Desktop/ClientServer/applications/45sasa653276gdsffdd","/home/niharika/Desktop/ClientServer/applications/zip.zip")
    compress_time_end = Time.now - compress_time
    puts compress_time_end
    app_file = File.open("/home/niharika/Desktop/ClientServer/applications/zip.zip")
    bits_time= Time.now
-   bits=RestClient.post 'http://localhost:9292/bits', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/zip.zip", 'rb'), :timeout=> 3600
+   bits=RestClient.post 'http://localhost:9000/bits', :myfile => File.open("/home/niharika/Desktop/ClientServer/applications/zip.zip", 'rb'), :timeout=> 3600
    bits_time_end = Time.now - bits_time
    puts bits_time_end
       #puts bits
