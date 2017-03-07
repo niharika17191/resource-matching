@@ -23,14 +23,30 @@ class ServerDbApp < Sinatra::Base
 
   dataset = DB.from(:marcs_application)
   creds = JSON.load(File.read('secrets.json'))
-  x= Aws.config.update({
-    #region: 'us-west-2',
-    region: 'eu-central-1',
-    credentials: Aws::Credentials.new(creds['AccessKeyId'], creds['SecretAccessKey']),
-    http_wire_trace: true
-    })
-    s3= Aws::S3::Resource.new
-    s3_client= Aws::S3::Client.new
+  # x= Aws.config.update({
+  #   #region: 'us-west-2',
+  #   region: 'eu-central-1',
+  #   credentials: Aws::Credentials.new(creds['AccessKeyId'], creds['SecretAccessKey']),
+  #   http_wire_trace: true
+  #   })
+  #   s3= Aws::S3::Resource.new
+  #   s3_client= Aws::S3::Client.new
+
+  s3= Aws::S3::Resource.new({
+    region: 'us-west-2',
+   endpoint: 'https://s3-api.us-geo.objectstorage.softlayer.net',
+   credentials: Aws::Credentials.new(creds['AccessKeyId'], creds['SecretAccessKey']),
+   http_wire_trace: true
+   })
+  s3_client= Aws::S3::Client.new({
+    region: 'us-west-2',
+   endpoint: 'https://s3-api.us-geo.objectstorage.softlayer.net',
+   credentials: Aws::Credentials.new(creds['AccessKeyId'], creds['SecretAccessKey']),
+   http_wire_trace: true
+   })
+
+   resp = s3.buckets
+   puts resp.to_a
 
 
     post '/apps' do
@@ -53,13 +69,13 @@ class ServerDbApp < Sinatra::Base
         #puts "created new entry"
       end
       s3.create_bucket({
-        bucket: "12345hgs12356", # required
+        bucket: "45sasa653276gdsffdd", # required
         create_bucket_configuration: {
-          location_constraint: "eu-central-1"
+          location_constraint: "us-standard"
         }
         })
-        json_data= {"Name"=> application_name, "GUID"=> "12345hgs12356"}.to_json
-        dataset.insert(:guid => '12345hgs12356', :appName => application_name)
+        json_data= {"Name"=> application_name, "GUID"=> "45sasa653276gdsffdd"}.to_json
+        dataset.insert(:guid => '45sasa653276gdsffdd', :appName => application_name)
 
         status 201
         return json_data
@@ -75,24 +91,24 @@ class ServerDbApp < Sinatra::Base
       end
 
       def change_insert(guidkey)
-      $guidjson[guidkey].each do |sec_hash|
-            if $serverjson.keys.include?sec_hash
+        $guidjson[guidkey].each do |sec_hash|
+          if $serverjson.keys.include?sec_hash
             puts "present" +sec_hash
           elsif $serverjson.keys.empty?
             return $file_stack
-            else
+          else
             if $guidjson.keys.include?sec_hash
               puts "does not exist" +sec_hash
               change_insert(sec_hash)
               return $file_stack
             else
-             $file_stack << sec_hash
-             puts sec_hash
-             puts "file does not exist" +sec_hash
-             return $file_stack
-           end
-           next
-           end
+              $file_stack << sec_hash
+              puts sec_hash
+              puts "file does not exist" +sec_hash
+
+            end
+            next
+          end
 
         end
       end
@@ -110,12 +126,12 @@ class ServerDbApp < Sinatra::Base
         end
         $guidjson = JSON.parse(File.read("./server_applications/#{file}"))
        #$guidjson = params[:data]
-        puts $guidjson
+        #puts $guidjson
         guid_download_time = Time.now
         begin
           resp = s3_client.get_object(
           response_target: '/home/niharika/Desktop/ClientServer/server_applications/guidserver.json',
-          bucket: '12345hgs12356',
+          bucket: '45sasa653276gdsffdd',
           key: 'guid.json')
           $guid_download_time = Time.now - guid_download_time
           puts "guid_download_time"
@@ -143,7 +159,7 @@ class ServerDbApp < Sinatra::Base
         puts $serverjson.keys
         puts $serverjson.keys.class
         if $serverjson["start"]==$guidjson["start"]
-          #puts "no change"
+          puts "no change"
         else
         $guidjson[$guidjson["start"]].each do |guidkey|
               if   $serverjson[$serverjson["start"]].include?guidkey
@@ -165,6 +181,7 @@ class ServerDbApp < Sinatra::Base
         return_data["GUID"]=$guidjson['GUID']
         return_data["unknown_hash"]=$file_stack
         return_data= return_data.to_json
+        puts return_data
         return return_data
         end
         end
@@ -191,7 +208,7 @@ class ServerDbApp < Sinatra::Base
         begin
           resp = s3_client.get_object(
           response_target: '/home/niharika/Desktop/ClientServer/server_applications/zip.zip',
-          bucket: '12345hgs12356',
+          bucket: '45sasa653276gdsffdd',
           key: 'zip.zip')
         rescue Aws::S3::Errors::NoSuchKey => $error
           puts $error
@@ -206,7 +223,7 @@ class ServerDbApp < Sinatra::Base
             puts $guid
           }
           s3_put = Time.now
-          s3_client.put_object(bucket: "12345hgs12356", key: filename, body: File.open("/home/niharika/Desktop/ClientServer/server_applications/#{file}"))
+          s3_client.put_object(bucket: "45sasa653276gdsffdd", key: filename, body: File.open("/home/niharika/Desktop/ClientServer/server_applications/#{file}"))
           s3_comp = Time.now - s3_put
         else
           assemble_package = Time.now
@@ -255,4 +272,3 @@ class ServerDbApp < Sinatra::Base
         puts $guid_download_time
       end
     end                          #class end
-
