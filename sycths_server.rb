@@ -32,19 +32,36 @@ class ServerDbApp < Sinatra::Base
   dataset = DB.from(:sycths_application)
   # puts dataset
   application_data = DB.from(:sycths_application_data)
-  #puts application_data.select(:guid).where(:guid => '12345hgs12356') .to_a
+  #puts application_data.select(:guid).where(:guid => '45sasa653276hjdshf') .to_a
 
 
   creds = JSON.load(File.read('secrets.json'))
-  x= Aws.config.update({
-    #region: 'us-west-2',
-    region: 'eu-central-1',
-    credentials: Aws::Credentials.new(creds['AccessKeyId'], creds['SecretAccessKey']),
-    http_wire_trace: true
-    })
-    s3= Aws::S3::Resource.new
-    s3_client= Aws::S3::Client.new
-    resp = s3.buckets
+  # x= Aws.config.update({
+  #   #region: 'us-west-2',
+  #   region: 'eu-central-1',
+  #   credentials: Aws::Credentials.new(creds['AccessKeyId'], creds['SecretAccessKey']),
+  #   http_wire_trace: true
+  #   })
+  #   s3= Aws::S3::Resource.new
+  #   s3_client= Aws::S3::Client.new
+  #   resp = s3.buckets
+
+  s3= Aws::S3::Resource.new({
+    region: 'us-west-2',
+   endpoint: 'https://s3-api.us-geo.objectstorage.softlayer.net',
+   credentials: Aws::Credentials.new(creds['AccessKeyId'], creds['SecretAccessKey']),
+   http_wire_trace: true
+   })
+  s3_client= Aws::S3::Client.new({
+    region: 'us-west-2',
+   endpoint: 'https://s3-api.us-geo.objectstorage.softlayer.net',
+   credentials: Aws::Credentials.new(creds['AccessKeyId'], creds['SecretAccessKey']),
+   http_wire_trace: true
+   })
+
+   resp = s3.buckets
+   puts resp.to_a
+
 
     post '/apps/?' do
 
@@ -66,13 +83,13 @@ class ServerDbApp < Sinatra::Base
         puts "created new entry"
       end
       s3.create_bucket({
-        bucket: "12345hgs12356", # required
+        bucket: "45sasa653276hjdshf", # required
         create_bucket_configuration: {
-          location_constraint: "eu-central-1"
+          location_constraint: "us-standard"
         }
         })
-        json_data= {"Name"=> application_name, "GUID"=> "12345hgs12356"}.to_json
-        dataset.insert(:guid => '12345hgs12356', :appName => application_name)
+        json_data= {"Name"=> application_name, "GUID"=> "45sasa653276hjdshf"}.to_json
+        dataset.insert(:guid => '45sasa653276hjdshf', :appName => application_name)
         status 201
         return json_data
       end                                     #apps end
@@ -147,14 +164,14 @@ class ServerDbApp < Sinatra::Base
         begin
           resp = s3_client.get_object(
           response_target: '/home/niharika/Desktop/ClientServer/server_applications/zip.zip',
-          bucket: '12345hgs12356',
+          bucket: '45sasa653276hjdshf',
           key: 'zip.zip')
         rescue Aws::S3::Errors::NoSuchKey => $error
           puts $error
         end
         #file = Pathname.new("/home/niharika/Desktop/server_applications"+file_path)
         if $error
-          s3_client.put_object(bucket: "12345hgs12356", key: filename, body: File.open("/home/niharika/Desktop/ClientServer/server_applications/#{file}"))
+          s3_client.put_object(bucket: "45sasa653276hjdshf", key: filename, body: File.open("/home/niharika/Desktop/ClientServer/server_applications/#{file}"))
         else
           puts "ssssssssssssssssssssssssssssssssssssssssss"
           assemble_start = Time.now
@@ -184,17 +201,19 @@ class ServerDbApp < Sinatra::Base
 
         # assemble = Time.now - assemble_start
 
-              s3_end = Time.now - s3_start
-              puts "s3_end"
-              puts s3_end
-              puts "s3_end"
+
               puts "assemble"
               puts assemble
               puts "assemble"
               puts "match_time_end"
               puts $match_time_end
+              s3_end = Time.now - s3_start
+              puts "s3_end"
+              puts s3_end
+              puts "s3_end"
 
       end
 
 
     end                          #class end
+
